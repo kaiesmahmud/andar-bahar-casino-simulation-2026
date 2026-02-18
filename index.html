@@ -1,0 +1,2324 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
+    <title>Andar Bahar</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700&family=Rajdhani:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --purple-deep: #1a0633;
+        --purple-main: #3d0d6e;
+        --purple-mid: #5a1a9a;
+        --purple-light: #7b2fc7;
+        --gold: #d4a017;
+        --gold-light: #f0c040;
+        --gold-dim: #8a6810;
+        --white: #fff;
+        --win-green: #27ae60;
+        --loss-amber: #b8860b;
+        --chip-red: #c0392b;
+        --chip-blue: #2980b9;
+        --chip-green: #27ae60;
+        --chip-purple: #6c3483;
+        --chip-gold: #d4a017;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #0a0012;
+        font-family: "Rajdhani", sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        overflow: hidden;
+      }
+
+      /* ===== GAME WRAPPER ===== */
+      #game-wrapper {
+        width: 390px;
+        max-height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: none;
+        position: relative;
+      }
+      #game-wrapper::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* ===== SCREENS ===== */
+      .screen {
+        display: none;
+        width: 100%;
+      }
+      .screen.active {
+        display: block;
+      }
+
+      /* ===== LOADING SCREEN ===== */
+      #loading-screen {
+        width: 390px;
+        height: 100vh;
+        background: radial-gradient(
+          ellipse at center,
+          #5a1a9a 0%,
+          #3d0d6e 40%,
+          #1a0633 80%,
+          #000 100%
+        );
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .arch-border {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+          repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 18px,
+            rgba(212, 160, 23, 0.08) 18px,
+            rgba(212, 160, 23, 0.08) 20px
+          ),
+          repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 18px,
+            rgba(212, 160, 23, 0.08) 18px,
+            rgba(212, 160, 23, 0.08) 20px
+          );
+        pointer-events: none;
+      }
+
+      .arch-container {
+        position: relative;
+        z-index: 2;
+        margin-top: 60px;
+        width: 280px;
+        height: 380px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .arch-svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .arch-content {
+        position: relative;
+        z-index: 3;
+        text-align: center;
+        padding: 40px 20px 20px;
+      }
+
+      .game-title {
+        font-family: "Cinzel Decorative", cursive;
+        font-size: 2.6rem;
+        font-weight: 900;
+        color: var(--gold-light);
+        text-shadow:
+          0 0 20px rgba(212, 160, 23, 0.8),
+          0 2px 4px rgba(0, 0, 0, 0.5);
+        line-height: 1.1;
+        animation: titleGlow 2s ease-in-out infinite alternate;
+      }
+
+      @keyframes titleGlow {
+        from {
+          text-shadow:
+            0 0 20px rgba(212, 160, 23, 0.6),
+            0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        to {
+          text-shadow:
+            0 0 40px rgba(212, 160, 23, 1),
+            0 0 60px rgba(212, 160, 23, 0.4),
+            0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      .loading-label {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.85rem;
+        letter-spacing: 3px;
+        margin-top: 30px;
+        font-weight: 600;
+      }
+
+      .loading-bar-wrap {
+        width: 200px;
+        height: 12px;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: 8px;
+        border: 1px solid var(--gold-dim);
+      }
+
+      .loading-bar-fill {
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          var(--gold-dim),
+          var(--gold-light),
+          var(--gold)
+        );
+        border-radius: 6px;
+        width: 0%;
+        animation: loadFill 2.5s ease-in-out forwards;
+      }
+
+      @keyframes loadFill {
+        to {
+          width: 100%;
+        }
+      }
+
+      .loading-tagline {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 1rem;
+        margin-top: 20px;
+        text-align: center;
+        font-weight: 500;
+      }
+
+      /* ===== MAIN GAME SCREEN ===== */
+      #game-screen {
+        background: radial-gradient(
+          ellipse at top,
+          #4a1085 0%,
+          #2d0855 40%,
+          #1a0633 100%
+        );
+        min-height: 100vh;
+      }
+
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, #3d0d6e, #5a1a9a);
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 2px solid var(--gold-dim);
+      }
+
+      .avatar-wrap {
+        width: 46px;
+        height: 46px;
+        border: 2px solid var(--gold);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .avatar-wrap::after {
+        content: "";
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        width: 10px;
+        height: 10px;
+        background: #2ecc71;
+        border-radius: 50%;
+        border: 2px solid var(--purple-main);
+      }
+
+      .avatar-wrap svg {
+        width: 28px;
+        height: 28px;
+        fill: rgba(255, 255, 255, 0.5);
+      }
+
+      .username {
+        font-family: "Cinzel", serif;
+        color: white;
+        font-size: 1rem;
+        font-weight: 600;
+        flex: 1;
+      }
+
+      .balance-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1.5px solid var(--gold);
+        border-radius: 20px;
+        padding: 4px 12px;
+        color: white;
+        font-size: 0.95rem;
+        font-weight: 700;
+      }
+
+      .balance-badge .coin-icon {
+        font-size: 1.1rem;
+      }
+
+      .sound-btn {
+        width: 36px;
+        height: 36px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1.5px solid var(--gold);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: white;
+        font-size: 1rem;
+        transition: all 0.2s;
+        flex-shrink: 0;
+      }
+
+      /* Game area */
+      .game-area {
+        padding: 0 12px 16px;
+        position: relative;
+      }
+
+      .game-title-sm {
+        font-family: "Cinzel Decorative", cursive;
+        color: var(--gold-light);
+        font-size: 1.6rem;
+        text-align: center;
+        padding: 14px 0 8px;
+        text-shadow: 0 0 20px rgba(212, 160, 23, 0.6);
+      }
+
+      /* Arch decoration */
+      .arch-decoration {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 200px;
+        height: 180px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* Card area */
+      .card-display-area {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        min-height: 110px;
+        padding: 4px 0 8px;
+      }
+
+      /* Timer row */
+      .timer-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin: 4px 0 8px;
+      }
+
+      .label-andar,
+      .label-bahar {
+        font-family: "Cinzel", serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--gold-light);
+      }
+
+      .timer-badge {
+        background: linear-gradient(135deg, #b8860b, #f0c040, #b8860b);
+        color: #1a0633;
+        font-family: "Cinzel", serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        padding: 4px 14px;
+        border-radius: 6px;
+        min-width: 60px;
+        text-align: center;
+        box-shadow: 0 0 12px rgba(212, 160, 23, 0.5);
+      }
+
+      /* Bet boxes grid */
+      .bet-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .bet-box {
+        background: linear-gradient(
+          135deg,
+          rgba(90, 26, 154, 0.4),
+          rgba(61, 13, 110, 0.6)
+        );
+        border: 1.5px solid var(--gold-dim);
+        border-radius: 10px;
+        padding: 10px 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+      }
+
+      .bet-box:hover:not(.disabled) {
+        border-color: var(--gold-light);
+        background: linear-gradient(
+          135deg,
+          rgba(123, 47, 199, 0.5),
+          rgba(90, 26, 154, 0.7)
+        );
+        transform: scale(1.02);
+      }
+
+      .bet-box.selected {
+        border: 2px solid var(--gold-light);
+        box-shadow: 0 0 15px rgba(240, 192, 64, 0.4);
+        background: linear-gradient(
+          135deg,
+          rgba(123, 47, 199, 0.6),
+          rgba(90, 26, 154, 0.8)
+        );
+      }
+
+      .bet-box.disabled {
+        cursor: default;
+        opacity: 0.7;
+      }
+
+      .bet-box.won {
+        border-color: #2ecc71;
+        box-shadow: 0 0 15px rgba(46, 204, 113, 0.5);
+      }
+      .bet-box.lost {
+        border-color: #e74c3c;
+        box-shadow: 0 0 15px rgba(231, 76, 60, 0.3);
+        opacity: 0.7;
+      }
+
+      .bet-box-label {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 600;
+        letter-spacing: 1px;
+      }
+
+      .bet-box-mult {
+        font-family: "Cinzel", serif;
+        font-size: 1.3rem;
+        color: white;
+        font-weight: 700;
+      }
+
+      .chips-display {
+        width: 60px;
+        height: 40px;
+        position: relative;
+        margin-bottom: 2px;
+      }
+
+      .chip-pile {
+        position: absolute;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .pool-amount {
+        font-size: 0.72rem;
+        color: var(--gold-light);
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+      }
+      .coin-icon-sm {
+        font-size: 0.75rem;
+        line-height: 1;
+      }
+
+      .user-bet-on-box {
+        font-size: 0.65rem;
+        color: #2ecc71;
+        font-weight: 700;
+      }
+
+      /* Place Bet label */
+      .place-bet-label {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1rem;
+        font-weight: 600;
+        margin-top: 10px;
+        margin-bottom: 6px;
+      }
+
+      /* Chips row */
+      .chips-row {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .chip {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Cinzel", serif;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: white;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 3px solid rgba(255, 255, 255, 0.4);
+        position: relative;
+        user-select: none;
+      }
+
+      .chip::before {
+        content: "";
+        position: absolute;
+        inset: 4px;
+        border-radius: 50%;
+        border: 2px dashed rgba(255, 255, 255, 0.3);
+      }
+
+      .chip:hover {
+        transform: translateY(-4px) scale(1.08);
+      }
+      .chip.active-chip {
+        transform: translateY(-6px) scale(1.1);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+      }
+
+      .chip-50 {
+        background: radial-gradient(circle, #e74c3c, #c0392b);
+      }
+      .chip-100 {
+        background: radial-gradient(circle, #3498db, #2980b9);
+      }
+      .chip-200 {
+        background: radial-gradient(circle, #2ecc71, #27ae60);
+      }
+      .chip-500 {
+        background: radial-gradient(circle, #8e44ad, #6c3483);
+      }
+      .chip-1000 {
+        background: radial-gradient(circle, #d4a017, #8a6810);
+      }
+
+      /* ===== CARD ===== */
+      .playing-card {
+        width: 72px;
+        height: 96px;
+        background: white;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 700;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        position: relative;
+        border: 1px solid #ddd;
+        transition: all 0.3s;
+      }
+
+      .playing-card.center-card {
+        width: 80px;
+        height: 106px;
+        box-shadow:
+          0 0 20px rgba(212, 160, 23, 0.6),
+          0 4px 12px rgba(0, 0, 0, 0.5);
+        border: 2px solid var(--gold);
+      }
+
+      .playing-card .card-rank {
+        font-size: 1.3rem;
+        line-height: 1;
+      }
+      .playing-card .card-suit {
+        font-size: 1.5rem;
+        line-height: 1;
+      }
+      .playing-card.red {
+        color: #e74c3c;
+      }
+      .playing-card.black {
+        color: #1a0633;
+      }
+
+      .card-back {
+        width: 72px;
+        height: 96px;
+        background: linear-gradient(
+          135deg,
+          var(--purple-mid),
+          var(--purple-main)
+        );
+        border-radius: 8px;
+        border: 2px solid var(--gold-dim);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      }
+
+      .card-back-inner {
+        width: 56px;
+        height: 80px;
+        border: 2px solid rgba(212, 160, 23, 0.4);
+        border-radius: 4px;
+        background: repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 4px,
+          rgba(212, 160, 23, 0.08) 4px,
+          rgba(212, 160, 23, 0.08) 8px
+        );
+      }
+
+      /* Card deal animation */
+      @keyframes dealCard {
+        from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.85);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      .dealing {
+        animation: dealCard 0.3s ease-out;
+      }
+
+      /* Shuffle animation */
+      @keyframes shuffleCard {
+        0% {
+          transform: rotateY(0deg);
+        }
+        50% {
+          transform: rotateY(90deg) scale(0.8);
+        }
+        100% {
+          transform: rotateY(0deg);
+        }
+      }
+      .shuffling {
+        animation: shuffleCard 0.4s ease-in-out;
+      }
+
+      /* ===== RESULT BANNER ===== */
+      .result-banner {
+        margin: 8px 0;
+        border-radius: 12px;
+        padding: 14px 16px;
+        text-align: center;
+        border: 2px solid transparent;
+      }
+
+      .result-banner.win {
+        background: linear-gradient(
+          135deg,
+          rgba(39, 174, 96, 0.2),
+          rgba(39, 174, 96, 0.1)
+        );
+        border-color: #2ecc71;
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+      }
+
+      .result-banner.loss {
+        background: linear-gradient(
+          135deg,
+          rgba(184, 134, 11, 0.3),
+          rgba(139, 69, 0, 0.2)
+        );
+        border-color: var(--gold-dim);
+      }
+
+      .result-title {
+        font-family: "Cinzel", serif;
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: white;
+      }
+
+      .result-amount {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 6px;
+        padding: 4px 16px;
+        font-family: "Cinzel", serif;
+        font-size: 1.1rem;
+        color: white;
+        margin-top: 6px;
+        display: inline-block;
+      }
+
+      .confetti-emoji {
+        font-size: 1.2rem;
+      }
+
+      /* ===== STATS PANEL ===== */
+      .stats-panel {
+        margin-top: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--gold-dim);
+        border-radius: 10px;
+        padding: 10px 14px;
+      }
+
+      .stats-title {
+        font-family: "Cinzel", serif;
+        font-size: 0.8rem;
+        color: var(--gold-light);
+        letter-spacing: 2px;
+        text-align: center;
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+
+      .stats-grid-top {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 6px;
+      }
+
+      .stat-item {
+        text-align: center;
+        background: rgba(212, 160, 23, 0.08);
+        border-radius: 6px;
+        padding: 6px 4px;
+      }
+
+      .stat-label {
+        font-size: 0.62rem;
+        color: rgba(255, 255, 255, 0.5);
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+
+      .stat-value {
+        font-size: 0.88rem;
+        color: var(--gold-light);
+        font-weight: 700;
+        font-family: "Cinzel", serif;
+      }
+
+      /* Phase indicator */
+      .phase-indicator {
+        text-align: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.7);
+        letter-spacing: 1px;
+        padding: 4px 0;
+        min-height: 22px;
+      }
+
+      /* Card deal display for andar/bahar reveal */
+      .deal-area {
+        position: relative;
+        width: 52px; /* wide enough for one card + shadow */
+        height: 72px; /* card height; extra cards peek via offset on container */
+        flex-shrink: 0;
+      }
+
+      /* The container grows downward as cards stack */
+      .card-stack-wrap {
+        position: relative;
+        width: 52px;
+        /* height is set dynamically via JS */
+        flex-shrink: 0;
+      }
+
+      .deal-label {
+        font-family: "Cinzel", serif;
+        font-size: 0.7rem;
+        color: var(--gold);
+        text-align: center;
+        margin-bottom: 4px;
+        letter-spacing: 1px;
+      }
+
+      .deal-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .mini-card {
+        width: 46px;
+        height: 64px;
+        background: white;
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.72rem;
+        font-weight: 700;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.55);
+        border: 1px solid #ccc;
+        position: absolute;
+        left: 0;
+        top: 0;
+        /* each card's top offset set inline by JS */
+      }
+      .mini-card.red {
+        color: #e74c3c;
+      }
+      .mini-card.black {
+        color: #111;
+      }
+      .mini-card.winner-card {
+        border: 2px solid #f0c040;
+        box-shadow:
+          0 0 14px rgba(212, 160, 23, 0.9),
+          0 3px 8px rgba(0, 0, 0, 0.55);
+        z-index: 100 !important;
+      }
+
+      .mini-card-back {
+        width: 46px;
+        height: 64px;
+        background: linear-gradient(135deg, #5a1a9a, #3d0d6e);
+        border-radius: 6px;
+        border: 1.5px solid var(--gold-dim);
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+
+      /* History badges */
+      .history-row {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 4px 0;
+      }
+      .hist-badge {
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        font-family: "Cinzel", serif;
+      }
+      .hist-badge.andar {
+        background: rgba(46, 204, 113, 0.2);
+        color: #2ecc71;
+        border: 1px solid #2ecc71;
+      }
+      .hist-badge.bahar {
+        background: rgba(231, 76, 60, 0.2);
+        color: #e74c3c;
+        border: 1px solid #e74c3c;
+      }
+
+      /* Misc */
+      .hidden {
+        display: none !important;
+      }
+
+      .pulse-ring {
+        animation: pulseRing 1s ease-in-out infinite;
+      }
+      @keyframes pulseRing {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(240, 192, 64, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 8px rgba(240, 192, 64, 0);
+        }
+      }
+
+      /* Countdown urgent */
+      .timer-badge.urgent {
+        background: linear-gradient(135deg, #c0392b, #e74c3c);
+        color: white;
+        animation: pulseRing 0.5s ease-in-out infinite;
+      }
+
+      /* Selected chip indicator */
+      .selected-chip-info {
+        text-align: center;
+        font-size: 0.8rem;
+        color: var(--gold-light);
+        font-weight: 600;
+        min-height: 18px;
+      }
+
+      /* Undo button */
+      .undo-btn {
+        background: rgba(231, 76, 60, 0.2);
+        border: 1px solid #e74c3c;
+        color: #e74c3c;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        display: inline-block;
+        margin: 0 auto 6px;
+      }
+      .undo-btn:hover {
+        background: rgba(231, 76, 60, 0.35);
+      }
+
+      .action-row {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+
+      /* Winner highlight */
+      @keyframes winnerGlow {
+        0%,
+        100% {
+          box-shadow: 0 0 15px rgba(46, 204, 113, 0.5);
+        }
+        50% {
+          box-shadow:
+            0 0 30px rgba(46, 204, 113, 0.9),
+            0 0 50px rgba(46, 204, 113, 0.3);
+        }
+      }
+      .winner-glow {
+        animation: winnerGlow 0.8s ease-in-out infinite;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-wrapper">
+      <!-- LOADING SCREEN -->
+      <div id="loading-screen" class="screen active">
+        <div class="arch-border"></div>
+        <div class="arch-container">
+          <svg class="arch-svg" viewBox="0 0 280 380" fill="none">
+            <path
+              d="M20 380 L20 180 Q20 20 140 20 Q260 20 260 180 L260 380"
+              stroke="url(#goldGrad)"
+              stroke-width="3"
+              fill="rgba(90,26,154,0.5)"
+            />
+            <path
+              d="M35 380 L35 185 Q35 45 140 45 Q245 45 245 185 L245 380"
+              stroke="url(#goldGrad)"
+              stroke-width="1.5"
+              fill="none"
+              stroke-dasharray="4 4"
+              opacity="0.5"
+            />
+            <defs>
+              <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f0c040" />
+                <stop offset="50%" stop-color="#d4a017" />
+                <stop offset="100%" stop-color="#8a6810" />
+              </linearGradient>
+            </defs>
+            <!-- Decorative circles at top of arch -->
+            <circle cx="140" cy="22" r="8" fill="#d4a017" opacity="0.8" />
+            <circle cx="140" cy="22" r="4" fill="#f0c040" />
+            <!-- Side ornaments -->
+            <circle cx="20" cy="180" r="5" fill="#d4a017" opacity="0.6" />
+            <circle cx="260" cy="180" r="5" fill="#d4a017" opacity="0.6" />
+          </svg>
+          <div class="arch-content">
+            <div class="game-title">Andar<br />Bahar</div>
+            <div class="loading-label">LOADING</div>
+            <div class="loading-bar-wrap">
+              <div class="loading-bar-fill"></div>
+            </div>
+            <div class="loading-tagline" style="margin-top: 16px">
+              Play with friends and get<br />winner rewards !
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GAME SCREEN -->
+      <div id="game-screen" class="screen">
+        <!-- Header -->
+        <div class="header">
+          <div class="avatar-wrap">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"
+              />
+            </svg>
+          </div>
+          <div class="username">User Name</div>
+          <div class="balance-badge">
+            <span class="coin-icon">🪙</span>
+            <span id="balance-display">20,00000</span>
+          </div>
+          <div class="sound-btn" onclick="toggleSound()">🔊</div>
+        </div>
+
+        <div class="game-area">
+          <!-- Arch decoration -->
+          <svg class="arch-decoration" viewBox="0 0 200 180" fill="none">
+            <path
+              d="M10 180 L10 90 Q10 10 100 10 Q190 10 190 90 L190 180"
+              stroke="rgba(212,160,23,0.25)"
+              stroke-width="2"
+              fill="none"
+            />
+            <path
+              d="M25 180 L25 95 Q25 30 100 30 Q175 30 175 95 L175 180"
+              stroke="rgba(212,160,23,0.12)"
+              stroke-width="1"
+              fill="none"
+            />
+          </svg>
+
+          <div class="game-title-sm">Andar Bahar</div>
+
+          <!-- Phase indicator -->
+          <div class="phase-indicator" id="phase-text">
+            Preparing next round...
+          </div>
+
+          <!-- Card display area - shows shuffle, then center card, then dealing -->
+          <div id="card-display-area" class="card-display-area">
+            <!-- populated by JS -->
+          </div>
+
+          <!-- Deal area (shown during reveal) -->
+          <div id="deal-display" class="hidden" style="padding: 4px 0">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 6px;
+              "
+            >
+              <!-- Andar column -->
+              <div
+                style="
+                  flex: 1;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                "
+              >
+                <div class="deal-label">ANDAR</div>
+                <div
+                  id="andar-stack"
+                  class="card-stack-wrap"
+                  style="height: 72px"
+                ></div>
+              </div>
+              <!-- Center card -->
+              <div
+                style="
+                  flex: 0 0 auto;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                "
+              >
+                <div class="deal-label" id="center-label">CENTER</div>
+                <div id="center-card-sm"></div>
+              </div>
+              <!-- Bahar column -->
+              <div
+                style="
+                  flex: 1;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                "
+              >
+                <div class="deal-label">BAHAR</div>
+                <div
+                  id="bahar-stack"
+                  class="card-stack-wrap"
+                  style="height: 72px"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Timer row -->
+          <div class="timer-row">
+            <div class="label-andar">Andar</div>
+            <div class="timer-badge" id="timer-badge">--</div>
+            <div class="label-bahar">Bahar</div>
+          </div>
+
+          <!-- Bet grid -->
+          <div class="bet-grid">
+            <!-- Andar main -->
+            <div
+              class="bet-box disabled"
+              id="box-andar"
+              onclick="placeBet('andar')"
+            >
+              <div class="bet-box-mult">2x</div>
+              <div class="pool-amount" id="pool-andar">
+                <span class="coin-icon-sm">🪙</span
+                ><span id="pool-andar-val">0</span>
+              </div>
+              <div class="user-bet-on-box hidden" id="ubet-andar">
+                Your bet: 0
+              </div>
+            </div>
+            <!-- Bahar main -->
+            <div
+              class="bet-box disabled"
+              id="box-bahar"
+              onclick="placeBet('bahar')"
+            >
+              <div class="bet-box-mult">2x</div>
+              <div class="pool-amount" id="pool-bahar">
+                <span class="coin-icon-sm">🪙</span
+                ><span id="pool-bahar-val">0</span>
+              </div>
+              <div class="user-bet-on-box hidden" id="ubet-bahar">
+                Your bet: 0
+              </div>
+            </div>
+            <!-- Andar 1-9 -->
+            <div
+              class="bet-box disabled"
+              id="box-a19"
+              onclick="placeBet('a19')"
+            >
+              <div class="bet-box-label">1-9</div>
+              <div class="bet-box-mult">2x</div>
+              <div class="pool-amount" id="pool-a19">
+                <span class="coin-icon-sm">🪙</span
+                ><span id="pool-a19-val">0</span>
+              </div>
+              <div class="user-bet-on-box hidden" id="ubet-a19">0</div>
+            </div>
+            <!-- Bahar 2-10 -->
+            <div
+              class="bet-box disabled"
+              id="box-b210"
+              onclick="placeBet('b210')"
+            >
+              <div class="bet-box-label">2-10</div>
+              <div class="bet-box-mult">2x</div>
+              <div class="pool-amount" id="pool-b210">
+                <span class="coin-icon-sm">🪙</span
+                ><span id="pool-b210-val">0</span>
+              </div>
+              <div class="user-bet-on-box hidden" id="ubet-b210">0</div>
+            </div>
+            <!-- Andar 11-19 -->
+            <div
+              class="bet-box disabled"
+              id="box-a1119"
+              onclick="placeBet('a1119')"
+            >
+              <div class="bet-box-label">11-19</div>
+              <div class="bet-box-mult">2x</div>
+              <div class="pool-amount" id="pool-a1119">
+                <span class="coin-icon-sm">🪙</span
+                ><span id="pool-a1119-val">0</span>
+              </div>
+              <div class="user-bet-on-box hidden" id="ubet-a1119">0</div>
+            </div>
+            <!-- Bahar 12-20 -->
+            <div
+              class="bet-box disabled"
+              id="box-b1220"
+              onclick="placeBet('b1220')"
+            >
+              <div class="bet-box-label">12-20</div>
+              <div class="bet-box-mult">2x</div>
+              <div class="pool-amount" id="pool-b1220">
+                <span class="coin-icon-sm">🪙</span
+                ><span id="pool-b1220-val">0</span>
+              </div>
+              <div class="user-bet-on-box hidden" id="ubet-b1220">0</div>
+            </div>
+          </div>
+
+          <!-- Selected chip info -->
+          <div
+            class="selected-chip-info"
+            id="chip-info"
+            style="margin-top: 8px"
+          >
+            Select a chip to place bets
+          </div>
+
+          <!-- Chips section (hidden during non-betting phases) -->
+          <div id="chips-section" class="hidden">
+            <div class="place-bet-label">Place Bet:</div>
+            <div class="chips-row">
+              <div class="chip chip-50" onclick="selectChip(50)">50</div>
+              <div class="chip chip-100" onclick="selectChip(100)">100</div>
+              <div class="chip chip-200" onclick="selectChip(200)">200</div>
+              <div class="chip chip-500" onclick="selectChip(500)">500</div>
+              <div class="chip chip-1000" onclick="selectChip(1000)">1000</div>
+            </div>
+            <div class="action-row">
+              <div class="undo-btn" onclick="undoBet()">✕ Clear Bets</div>
+            </div>
+          </div>
+
+          <!-- Result banner -->
+          <div id="result-banner" class="result-banner hidden"></div>
+
+          <!-- Round history -->
+          <div
+            id="history-row"
+            class="history-row"
+            style="margin-top: 6px"
+          ></div>
+
+          <!-- Stats panel -->
+          <div class="stats-panel">
+            <div class="stats-title">📊 LIVE STATS</div>
+
+            <!-- Row 1: Total bets + Users payout (all players) -->
+            <div class="stats-grid-top" style="margin-bottom: 4px">
+              <div class="stat-item">
+                <div class="stat-label">TOTAL<br />BETS</div>
+                <div class="stat-value" id="stat-totalbets">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">USERS<br />GET</div>
+                <div class="stat-value" id="stat-usersget">0</div>
+              </div>
+            </div>
+
+            <!-- Divider -->
+            <div
+              style="
+                border-top: 1px solid rgba(212, 160, 23, 0.2);
+                margin: 5px 0;
+              "
+            ></div>
+            <div
+              style="
+                font-size: 0.65rem;
+                color: rgba(255, 255, 255, 0.4);
+                text-align: center;
+                letter-spacing: 1px;
+                margin-bottom: 4px;
+              "
+            >
+              YOUR STATS
+            </div>
+
+            <!-- Row 2: User personal stats -->
+            <div class="stats-grid" style="margin-bottom: 4px">
+              <div class="stat-item">
+                <div class="stat-label">YOUR<br />BETS</div>
+                <div class="stat-value" id="stat-userbets">0</div>
+              </div>
+              <div
+                class="stat-item"
+                style="border: 1px solid rgba(46, 204, 113, 0.3)"
+              >
+                <div class="stat-label" style="color: #2ecc71">
+                  YOUR<br />WINS
+                </div>
+                <div
+                  class="stat-value"
+                  style="color: #2ecc71"
+                  id="stat-userwins"
+                >
+                  0
+                </div>
+              </div>
+              <div
+                class="stat-item"
+                style="border: 1px solid rgba(231, 76, 60, 0.3)"
+              >
+                <div class="stat-label" style="color: #e74c3c">
+                  YOUR<br />LOSS
+                </div>
+                <div
+                  class="stat-value"
+                  style="color: #e74c3c"
+                  id="stat-userloss"
+                >
+                  0
+                </div>
+              </div>
+            </div>
+
+            <!-- Divider -->
+            <div
+              style="
+                border-top: 1px solid rgba(212, 160, 23, 0.2);
+                margin: 5px 0;
+              "
+            ></div>
+            <div
+              style="
+                font-size: 0.65rem;
+                color: rgba(255, 255, 255, 0.4);
+                text-align: center;
+                letter-spacing: 1px;
+                margin-bottom: 4px;
+              "
+            >
+              HOUSE STATS
+            </div>
+
+            <!-- Row 3: House breakdown -->
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-label">GIVE AWAY<br />HOLDING</div>
+                <div class="stat-value" id="stat-giveaway">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">TOTAL<br />PROFIT</div>
+                <div class="stat-value" id="stat-profit">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-label">PROVIDER<br />FEE</div>
+                <div class="stat-value" id="stat-fee">0</div>
+              </div>
+            </div>
+
+            <div
+              style="
+                text-align: center;
+                margin-top: 6px;
+                font-size: 0.68rem;
+                color: rgba(255, 255, 255, 0.35);
+              "
+            >
+              Round #<span id="round-num">1</span>
+            </div>
+          </div>
+
+          <!-- Reset button -->
+          <div style="text-align: center; margin: 10px 0 16px">
+            <button
+              onclick="resetAllData()"
+              style="
+                background: rgba(231, 76, 60, 0.12);
+                border: 1px solid rgba(231, 76, 60, 0.45);
+                color: rgba(231, 76, 60, 0.8);
+                border-radius: 8px;
+                padding: 7px 20px;
+                font-family: &quot;Rajdhani&quot;, sans-serif;
+                font-size: 0.8rem;
+                font-weight: 700;
+                letter-spacing: 1px;
+                cursor: pointer;
+                transition: all 0.2s;
+              "
+              onmouseover="
+                this.style.background = 'rgba(231,76,60,0.28)';
+                this.style.color = '#e74c3c';
+              "
+              onmouseout="
+                this.style.background = 'rgba(231,76,60,0.12)';
+                this.style.color = 'rgba(231,76,60,0.8)';
+              "
+            >
+              ⟳ RESET ALL DATA
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ============================================================
+      // CONSTANTS & STATE
+      // ============================================================
+      const SUITS = ["♠", "♥", "♦", "♣"];
+      const RANKS = [
+        "A",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "J",
+        "Q",
+        "K",
+      ];
+      const RED_SUITS = new Set(["♥", "♦"]);
+
+      let state = {
+        phase: "loading", // loading | shuffle | betting | revealing | result
+        balance: 2000000,
+        selectedChip: null,
+        userBets: { andar: 0, bahar: 0, a19: 0, b210: 0, a1119: 0, b1220: 0 },
+        randomPools: {
+          andar: 0,
+          bahar: 0,
+          a19: 0,
+          b210: 0,
+          a1119: 0,
+          b1220: 0,
+        },
+        centerCard: null,
+        deck: [],
+        andarCards: [],
+        baharCards: [],
+        timer: 0,
+        timerInterval: null,
+        roundHistory: [],
+        roundNum: 1,
+        stats: loadStats(),
+        soundOn: true,
+      };
+
+      function loadStats() {
+        try {
+          const s = JSON.parse(localStorage.getItem("ab_stats") || "{}");
+          return {
+            giveaway: s.giveaway || 0,
+            profit: s.profit || 0,
+            fee: s.fee || 0,
+            totalBets: s.totalBets || 0,
+            usersGet: s.usersGet || 0,
+            userTotalBet: s.userTotalBet || 0,
+            userTotalWin: s.userTotalWin || 0,
+            userTotalLoss: s.userTotalLoss || 0,
+          };
+        } catch (e) {
+          return {
+            giveaway: 0,
+            profit: 0,
+            fee: 0,
+            totalBets: 0,
+            usersGet: 0,
+            userTotalBet: 0,
+            userTotalWin: 0,
+            userTotalLoss: 0,
+          };
+        }
+      }
+
+      function saveStats() {
+        localStorage.setItem("ab_stats", JSON.stringify(state.stats));
+      }
+
+      // ============================================================
+      // CARD UTILITIES
+      // ============================================================
+      function buildDeck() {
+        const d = [];
+        for (const s of SUITS)
+          for (const r of RANKS) d.push({ rank: r, suit: s });
+        return d;
+      }
+
+      function shuffle(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function cardColor(card) {
+        return RED_SUITS.has(card.suit) ? "red" : "black";
+      }
+
+      function renderCardHTML(card, size = "normal") {
+        const cls =
+          size === "mini"
+            ? "mini-card"
+            : size === "center"
+              ? "playing-card center-card"
+              : "playing-card";
+        return `<div class="${cls} ${cardColor(card)}">
+    <div class="card-rank">${card.rank}</div>
+    <div class="card-suit">${card.suit}</div>
+  </div>`;
+      }
+
+      function renderCardBackHTML(size = "normal") {
+        if (size === "mini") return `<div class="mini-card-back"></div>`;
+        return `<div class="card-back"><div class="card-back-inner"></div></div>`;
+      }
+
+      // Game ends when dealt card has SAME RANK as center card (any suit)
+      function cardsMatch(a, b) {
+        return a.rank === b.rank;
+      }
+
+      // ============================================================
+      // RANDOM POOLS — incremental per-second fake bets
+      // ============================================================
+
+      // Reset all random pools to 0 at round start
+      function resetRandomPools() {
+        state.randomPools = {
+          andar: 0,
+          bahar: 0,
+          a19: 0,
+          b210: 0,
+          a1119: 0,
+          b1220: 0,
+        };
+        renderPools();
+      }
+
+      // Add one tick of random bets (called each second during betting)
+      function addRandomTickBets() {
+        const rnd = (min, max) =>
+          Math.floor(Math.random() * (max - min + 1)) + min;
+        state.randomPools.andar += rnd(200, 1800);
+        state.randomPools.bahar += rnd(200, 1800);
+        for (const key of ["a19", "b210", "a1119", "b1220"]) {
+          if (Math.random() < 0.6) state.randomPools[key] += rnd(50, 800);
+        }
+        renderPools();
+      }
+
+      function getTotalPool(key) {
+        return state.randomPools[key] + state.userBets[key];
+      }
+
+      function renderPools() {
+        for (const key of ["andar", "bahar", "a19", "b210", "a1119", "b1220"]) {
+          const valEl = document.getElementById("pool-" + key + "-val");
+          if (valEl)
+            valEl.textContent =
+              getTotalPool(key) > 0 ? getTotalPool(key).toLocaleString() : "0";
+
+          const ubet = document.getElementById("ubet-" + key);
+          if (ubet) {
+            if (state.userBets[key] > 0) {
+              ubet.textContent = "Bet: " + state.userBets[key].toLocaleString();
+              ubet.classList.remove("hidden");
+            } else {
+              ubet.classList.add("hidden");
+            }
+          }
+        }
+      }
+
+      // chip pile removed
+
+      // ============================================================
+      // ALGORITHM: Determine win side and position
+      // ============================================================
+      function algorithmDecide() {
+        const totalAndar = getTotalPool("andar");
+        const totalBahar = getTotalPool("bahar");
+        const totalBet = totalAndar + totalBahar;
+
+        // Check if giveaway reserve can cover a "player wins" round
+        const giveawayDouble = state.stats.giveaway >= totalBet * 2;
+
+        let winSide; // 'andar' or 'bahar'
+
+        if (giveawayDouble) {
+          // Can afford to let the higher-bet side win occasionally for fairness illusion
+          // But still prefer lower cost side
+          winSide = totalAndar <= totalBahar ? "andar" : "bahar";
+        } else {
+          // Always pick the side with less total bets to minimize payout
+          winSide = totalAndar <= totalBahar ? "andar" : "bahar";
+        }
+
+        // For serial boxes: determine what serial range minimizes payout
+        // User bets on a19 (andar, serial 1-9 odd), b210 (bahar, serial 2-10 even), etc.
+        // We want to pick a position that the user did NOT bet on, or that gives minimum payout
+        const andarUserBet19 = state.userBets.a19;
+        const andarUserBet1119 = state.userBets.a1119;
+        const baharUserBet210 = state.userBets.b210;
+        const baharUserBet1220 = state.userBets.b1220;
+
+        // Compute payout for each serial outcome
+        // andar serial options: 1-9 (odd pos 1,3,5,7,9) or 11-19 (odd 11,13,15,17,19)
+        // bahar serial options: 2-10 (even 2,4,6,8,10) or 12-20 (even 12,14,16,18,20)
+
+        let bestSerial;
+        if (winSide === "andar") {
+          // Pick andar serial with less user bet payout
+          const pay19 = getTotalPool("andar") * 2 + andarUserBet19 * 2;
+          const pay1119 = getTotalPool("andar") * 2 + andarUserBet1119 * 2;
+          bestSerial = pay19 <= pay1119 ? "1-9" : "11-19";
+        } else {
+          const pay210 = getTotalPool("bahar") * 2 + baharUserBet210 * 2;
+          const pay1220 = getTotalPool("bahar") * 2 + baharUserBet1220 * 2;
+          bestSerial = pay210 <= pay1220 ? "2-10" : "12-20";
+        }
+
+        return { winSide, bestSerial };
+      }
+
+      // ============================================================
+      // BUILD RIGGED DECK
+      // ============================================================
+      function buildRiggedDeck(centerCard, winSide, bestSerial) {
+        // Determine target deal-position for the matching card.
+        // Positions are 1-based, alternating: 1=Andar, 2=Bahar, 3=Andar, 4=Bahar ...
+        // Andar lands at odd positions (1,3,5,...), Bahar at even (2,4,6,...)
+        let targetPos;
+
+        if (winSide === "andar") {
+          const serials =
+            bestSerial === "1-9" ? [1, 3, 5, 7, 9] : [11, 13, 15, 17, 19];
+          targetPos = serials[Math.floor(Math.random() * serials.length)];
+        } else {
+          const serials =
+            bestSerial === "2-10" ? [2, 4, 6, 8, 10] : [12, 14, 16, 18, 20];
+          targetPos = serials[Math.floor(Math.random() * serials.length)];
+        }
+
+        // The 51-card dealing deck = full deck minus the center card itself.
+        // Same-rank cards (other suits) are kept — any of them can be the match card.
+        const dealingDeck = buildDeck().filter(
+          (c) => !(c.rank === centerCard.rank && c.suit === centerCard.suit),
+        );
+
+        // Separate same-rank cards (valid match triggers) from non-matching cards
+        const sameRankCards = shuffle(
+          dealingDeck.filter((c) => c.rank === centerCard.rank),
+        );
+        const otherCards = shuffle(
+          dealingDeck.filter((c) => c.rank !== centerCard.rank),
+        );
+
+        // Pick one same-rank card as the winner; rest go into filler pool
+        const winnerCard = sameRankCards[0]; // e.g. 10♥ if center is 10♠
+        const extraSameRank = sameRankCards.slice(1); // other same-rank cards (won't appear before winner)
+
+        // Build non-matching filler sequence (no same-rank cards before winner)
+        // We need exactly (targetPos - 1) filler cards before the winner
+        const fillersNeeded = targetPos - 1;
+        const fillerPool = shuffle(otherCards); // only non-rank cards as fillers
+
+        // Safety: if not enough non-rank fillers, pad (shouldn't happen with 48 other cards)
+        const fillers = fillerPool.slice(0, fillersNeeded);
+
+        // Cards after winner: remaining fillers + extra same-rank cards (shuffled)
+        const tail = shuffle([
+          ...fillerPool.slice(fillersNeeded),
+          ...extraSameRank,
+        ]);
+
+        // Final sequence: [fillers...] + [winnerCard] + [tail...]
+        const sequence = [...fillers, winnerCard, ...tail];
+
+        return { sequence, winPosition: targetPos, winSide };
+      }
+
+      // ============================================================
+      // PROFIT CALCULATION
+      // ============================================================
+      function calculateRoundProfit(winSide, winPosition) {
+        const totalBets =
+          Object.values(state.randomPools).reduce((a, b) => a + b, 0) +
+          Object.values(state.userBets).reduce((a, b) => a + b, 0);
+
+        // What we pay out
+        let payout = 0;
+
+        if (winSide === "andar") {
+          payout += getTotalPool("andar") * 2;
+          if (winPosition >= 1 && winPosition <= 9)
+            payout += getTotalPool("a19") * 2;
+          else payout += getTotalPool("a1119") * 2;
+        } else {
+          payout += getTotalPool("bahar") * 2;
+          if (winPosition >= 2 && winPosition <= 10)
+            payout += getTotalPool("b210") * 2;
+          else payout += getTotalPool("b1220") * 2;
+        }
+
+        const roundProfit = totalBets - payout;
+
+        // Distribute profit
+        if (roundProfit > 0) {
+          state.stats.giveaway += Math.floor(roundProfit * 0.3);
+          state.stats.profit += Math.floor(roundProfit * 0.5);
+          state.stats.fee += Math.floor(roundProfit * 0.2);
+        } else {
+          // Loss round - deduct from giveaway
+          state.stats.giveaway = Math.max(
+            0,
+            state.stats.giveaway + roundProfit,
+          );
+        }
+
+        // Accumulate totals
+        state.stats.totalBets = (state.stats.totalBets || 0) + totalBets;
+        state.stats.usersGet = (state.stats.usersGet || 0) + payout;
+
+        saveStats();
+        updateStatsUI();
+        return { totalBets, payout, roundProfit };
+      }
+
+      function updateStatsUI() {
+        document.getElementById("stat-giveaway").textContent = (
+          state.stats.giveaway || 0
+        ).toLocaleString();
+        document.getElementById("stat-profit").textContent = (
+          state.stats.profit || 0
+        ).toLocaleString();
+        document.getElementById("stat-fee").textContent = (
+          state.stats.fee || 0
+        ).toLocaleString();
+        document.getElementById("stat-totalbets").textContent = (
+          state.stats.totalBets || 0
+        ).toLocaleString();
+        document.getElementById("stat-usersget").textContent = (
+          state.stats.usersGet || 0
+        ).toLocaleString();
+        document.getElementById("stat-userbets").textContent = (
+          state.stats.userTotalBet || 0
+        ).toLocaleString();
+        document.getElementById("stat-userwins").textContent = (
+          state.stats.userTotalWin || 0
+        ).toLocaleString();
+        document.getElementById("stat-userloss").textContent = (
+          state.stats.userTotalLoss || 0
+        ).toLocaleString();
+      }
+
+      // ============================================================
+      // USER BALANCE
+      // ============================================================
+      function updateBalanceUI() {
+        document.getElementById("balance-display").textContent =
+          state.balance.toLocaleString();
+      }
+
+      // ============================================================
+      // CHIP SELECTION
+      // ============================================================
+      function selectChip(value) {
+        state.selectedChip = value;
+        document
+          .querySelectorAll(".chip")
+          .forEach((c) => c.classList.remove("active-chip"));
+        document.querySelectorAll(".chip").forEach((c) => {
+          if (c.textContent == value) c.classList.add("active-chip");
+        });
+        document.getElementById("chip-info").textContent =
+          `Chip: ${value} — Click a box to place bet`;
+      }
+
+      function undoBet() {
+        // Refund all user bets
+        const totalRefund = Object.values(state.userBets).reduce(
+          (a, b) => a + b,
+          0,
+        );
+        state.balance += totalRefund;
+        state.userBets = {
+          andar: 0,
+          bahar: 0,
+          a19: 0,
+          b210: 0,
+          a1119: 0,
+          b1220: 0,
+        };
+        updateBalanceUI();
+        renderPools();
+        document.getElementById("chip-info").textContent =
+          "Bets cleared. Select chip to bet again.";
+      }
+
+      function placeBet(boxKey) {
+        if (state.phase !== "betting") return;
+        if (!state.selectedChip) {
+          document.getElementById("chip-info").textContent =
+            "⚠ Select a chip first!";
+          return;
+        }
+        if (state.balance < state.selectedChip) {
+          document.getElementById("chip-info").textContent =
+            "⚠ Insufficient balance!";
+          return;
+        }
+        state.balance -= state.selectedChip;
+        state.userBets[boxKey] += state.selectedChip;
+        updateBalanceUI();
+        renderPools();
+
+        // Visual feedback
+        const box = document.getElementById("box-" + boxKey);
+        if (box) {
+          box.classList.add("selected");
+          setTimeout(() => {}, 200);
+        }
+
+        document.getElementById("chip-info").textContent =
+          `Bet ${state.selectedChip} on ${boxKey}. Total: ${state.userBets[boxKey]}`;
+      }
+
+      // ============================================================
+      // PHASE MANAGEMENT
+      // ============================================================
+
+      // PHASE 1: Shuffle animation
+      function phaseShuffleCards() {
+        state.phase = "shuffle";
+        setPhaseText("🃏 Shuffling Cards...");
+
+        const area = document.getElementById("card-display-area");
+
+        // Show 3 card backs shuffling
+        area.innerHTML = "";
+        for (let i = 0; i < 3; i++) {
+          const el = document.createElement("div");
+          el.innerHTML = renderCardBackHTML();
+          el.style.transition = "transform 0.3s";
+          area.appendChild(el);
+        }
+
+        // Animate shuffle for 3 seconds
+        let shuffleCount = 0;
+        const shuffleInterval = setInterval(() => {
+          area.querySelectorAll(".card-back").forEach((c) => {
+            c.classList.add("shuffling");
+            setTimeout(() => c.classList.remove("shuffling"), 350);
+          });
+          shuffleCount++;
+          if (shuffleCount >= 6) {
+            clearInterval(shuffleInterval);
+            phaseCenterCard();
+          }
+        }, 500);
+      }
+
+      // PHASE 2: Reveal center card
+      function phaseCenterCard() {
+        // Pick random center card
+        const allCards = buildDeck();
+        state.centerCard =
+          allCards[Math.floor(Math.random() * allCards.length)];
+
+        const area = document.getElementById("card-display-area");
+        area.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+    <div class="dealing">${renderCardHTML(state.centerCard, "center")}</div>
+    <div style="background:rgba(212,160,23,0.15);border:1px solid rgba(212,160,23,0.4);border-radius:6px;padding:3px 12px;font-size:0.72rem;color:var(--gold-light);font-weight:700;letter-spacing:1px;">
+      Any <b>${state.centerCard.rank}</b> ends the game
+    </div>
+  </div>`;
+
+        setPhaseText(
+          `🎴 Match the rank: ${state.centerCard.rank} — any suit wins!`,
+        );
+
+        // Reset pools to 0 — they fill up per-second during betting
+        resetRandomPools();
+
+        setTimeout(() => {
+          phaseBetting();
+        }, 1500);
+      }
+
+      // PHASE 3: Betting phase (10 second countdown)
+      function phaseBetting() {
+        state.phase = "betting";
+        state.timer = 10;
+        // Reset user bets for this round
+        state.userBets = {
+          andar: 0,
+          bahar: 0,
+          a19: 0,
+          b210: 0,
+          a1119: 0,
+          b1220: 0,
+        };
+        // Pools already reset to 0 in phaseCenterCard
+        state.selectedChip = null;
+        document
+          .querySelectorAll(".chip")
+          .forEach((c) => c.classList.remove("active-chip"));
+
+        setPhaseText("🎯 Place Your Bets!");
+
+        // Enable bet boxes
+        enableBetBoxes(true);
+
+        // Show chips
+        document.getElementById("chips-section").classList.remove("hidden");
+        document.getElementById("chip-info").textContent =
+          "Select a chip, then click a bet box";
+
+        // Clear bet box states
+        document.querySelectorAll(".bet-box").forEach((b) => {
+          b.classList.remove("won", "lost", "selected");
+        });
+
+        // Hide result
+        document.getElementById("result-banner").classList.add("hidden");
+
+        updateTimerUI(10, false);
+        // First tick immediately so pools start filling right away
+        addRandomTickBets();
+
+        state.timerInterval = setInterval(() => {
+          state.timer--;
+          updateTimerUI(state.timer, state.timer <= 3);
+          // Add random bets every second (9 more after the first = 10 total)
+          if (state.timer > 0) addRandomTickBets();
+          if (state.timer <= 0) {
+            clearInterval(state.timerInterval);
+            phaseBettingEnd();
+          }
+        }, 1000);
+      }
+
+      function updateTimerUI(val, urgent) {
+        const badge = document.getElementById("timer-badge");
+        badge.textContent = val <= 0 ? "00" : val < 10 ? "0" + val : val;
+        if (urgent) badge.classList.add("urgent");
+        else badge.classList.remove("urgent");
+      }
+
+      // PHASE 4: Betting ends, build deck, start revealing
+      function phaseBettingEnd() {
+        state.phase = "revealing";
+        setPhaseText("🔮 Cards Dealing...");
+        enableBetBoxes(false);
+        document.getElementById("chips-section").classList.add("hidden");
+        document.getElementById("chip-info").textContent = "";
+
+        // Algorithm decides outcome
+        const { winSide, bestSerial } = algorithmDecide();
+        const { sequence, winPosition } = buildRiggedDeck(
+          state.centerCard,
+          winSide,
+          bestSerial,
+        );
+
+        state.andarCards = [];
+        state.baharCards = [];
+
+        // Switch display
+        document.getElementById("card-display-area").classList.add("hidden");
+        document.getElementById("deal-display").classList.remove("hidden");
+
+        // Show center card small + update label with rank info
+        document.getElementById("center-card-sm").innerHTML = renderCardHTML(
+          state.centerCard,
+          "center",
+        );
+        const cl = document.getElementById("center-label");
+        if (cl) cl.textContent = state.centerCard.rank + " = WIN";
+
+        const andarStack = document.getElementById("andar-stack");
+        const baharStack = document.getElementById("bahar-stack");
+        andarStack.innerHTML = "";
+        baharStack.innerHTML = "";
+
+        const CARD_H = 64; // mini-card height px
+        const PEEK = 10; // how many px of each card peek below previous
+
+        let andarCount = 0;
+        let baharCount = 0;
+
+        function stackHeight(count) {
+          // total visible height: full top card + peek strips for the rest
+          return CARD_H + Math.max(0, count - 1) * PEEK;
+        }
+
+        function appendToStack(stack, card, isWinner) {
+          const count = stack.children.length; // before appending
+          const topPx = count * PEEK; // this card's top offset
+          const color = cardColor(card);
+
+          const el = document.createElement("div");
+          el.className = `mini-card ${color} dealing${isWinner ? " winner-card" : ""}`;
+          el.style.top = topPx + "px";
+          el.style.zIndex = count + 1;
+          if (isWinner) {
+            el.innerHTML = `<div style="font-size:0.78rem;font-weight:700;line-height:1;">${card.rank}</div>
+                      <div style="font-size:0.9rem;line-height:1;">${card.suit}</div>
+                      <div style="font-size:0.5rem;color:#d4a017;font-weight:700;letter-spacing:0.5px;">MATCH!</div>`;
+          } else {
+            el.innerHTML = `<div style="font-size:0.78rem;font-weight:700;line-height:1;">${card.rank}</div>
+                      <div style="font-size:0.9rem;line-height:1;">${card.suit}</div>`;
+          }
+          stack.appendChild(el);
+
+          // Grow the stack container so nothing is clipped
+          stack.style.height = stackHeight(count + 1) + "px";
+        }
+
+        let pos = 0;
+        let serialCount = 0;
+        let foundMatch = false;
+
+        const dealNext = () => {
+          if (foundMatch) return;
+          if (pos >= sequence.length) {
+            phaseResult(winSide, winPosition);
+            return;
+          }
+
+          const card = sequence[pos++];
+          serialCount++;
+
+          const isAndar = serialCount % 2 === 1; // odd positions → Andar
+          const isWinner = cardsMatch(card, state.centerCard);
+
+          if (isAndar) {
+            appendToStack(andarStack, card, isWinner);
+            andarCount++;
+          } else {
+            appendToStack(baharStack, card, isWinner);
+            baharCount++;
+          }
+
+          if (isWinner) {
+            foundMatch = true;
+            setTimeout(
+              () => phaseResult(isAndar ? "andar" : "bahar", serialCount),
+              900,
+            );
+            return;
+          }
+
+          setTimeout(dealNext, 360);
+        };
+
+        setTimeout(dealNext, 500);
+      }
+
+      // PHASE 5: Show result
+      function phaseResult(winSide, winPosition) {
+        state.phase = "result";
+
+        const { totalBets, payout, roundProfit } = calculateRoundProfit(
+          winSide,
+          winPosition,
+        );
+
+        // Determine what user won
+        let userWin = 0;
+        let userLoss = 0;
+
+        // Check main side
+        if (state.userBets[winSide] > 0) userWin += state.userBets[winSide] * 2;
+        const otherSide = winSide === "andar" ? "bahar" : "andar";
+        userLoss += state.userBets[otherSide];
+
+        // Check serial boxes
+        let winningSerialBox = null;
+        if (winSide === "andar") {
+          winningSerialBox = winPosition <= 9 ? "a19" : "a1119";
+          const loserBox = winPosition <= 9 ? "a1119" : "a19";
+          if (state.userBets[winningSerialBox] > 0)
+            userWin += state.userBets[winningSerialBox] * 2;
+          userLoss += state.userBets[loserBox];
+          userLoss += state.userBets["b210"] + state.userBets["b1220"];
+        } else {
+          winningSerialBox = winPosition <= 10 ? "b210" : "b1220";
+          const loserBox = winPosition <= 10 ? "b1220" : "b210";
+          if (state.userBets[winningSerialBox] > 0)
+            userWin += state.userBets[winningSerialBox] * 2;
+          userLoss += state.userBets[loserBox];
+          userLoss += state.userBets["a19"] + state.userBets["a1119"];
+        }
+
+        // Track user personal stats
+        const totalUserBetThisRound = Object.values(state.userBets).reduce(
+          (a, b) => a + b,
+          0,
+        );
+        state.stats.userTotalBet =
+          (state.stats.userTotalBet || 0) + totalUserBetThisRound;
+        state.stats.userTotalWin = (state.stats.userTotalWin || 0) + userWin;
+        state.stats.userTotalLoss =
+          (state.stats.userTotalLoss || 0) +
+          (totalUserBetThisRound > 0 && userWin === 0
+            ? totalUserBetThisRound
+            : 0);
+        // if partial win: lost the non-winning bets
+        if (
+          totalUserBetThisRound > 0 &&
+          userWin > 0 &&
+          userWin < totalUserBetThisRound * 2
+        ) {
+          // loss portion = bets placed on losing boxes (userLoss already computed above)
+          state.stats.userTotalLoss =
+            (state.stats.userTotalLoss || 0) + userLoss;
+        }
+        saveStats();
+        updateStatsUI();
+
+        // Update balance
+        state.balance += userWin;
+        updateBalanceUI();
+
+        // Color bet boxes
+        document
+          .querySelectorAll(".bet-box")
+          .forEach((b) => b.classList.remove("selected"));
+        document
+          .getElementById("box-" + winSide)
+          .classList.add("won", "winner-glow");
+        if (winningSerialBox)
+          document
+            .getElementById("box-" + winningSerialBox)
+            .classList.add("won");
+        document.getElementById("box-" + otherSide).classList.add("lost");
+
+        // Show result banner (only if user bet)
+        const totalUserBet = Object.values(state.userBets).reduce(
+          (a, b) => a + b,
+          0,
+        );
+        const banner = document.getElementById("result-banner");
+
+        if (totalUserBet > 0) {
+          if (userWin > 0) {
+            banner.className = "result-banner win";
+            banner.innerHTML = `<span class="confetti-emoji">🎉</span> <span class="result-title">You Win!</span> <span class="confetti-emoji">🎉</span><br><div class="result-amount">+${userWin.toLocaleString()}</div>`;
+          } else {
+            banner.className = "result-banner loss";
+            banner.innerHTML = `<div class="result-title">You Loss !</div><div style="font-size:0.85rem;color:rgba(255,255,255,0.7);margin-top:4px;">Better Luck Next time !</div>`;
+          }
+          banner.classList.remove("hidden");
+        } else {
+          banner.className = "result-banner";
+          banner.innerHTML = `<div style="color:rgba(255,255,255,0.6);font-size:0.85rem;">${winSide.toUpperCase()} wins! Position: ${winPosition}</div>`;
+          banner.classList.remove("hidden");
+        }
+
+        setPhaseText(
+          `✅ ${winSide.toUpperCase()} WINS at position ${winPosition}`,
+        );
+
+        // Update history
+        state.roundHistory.unshift(winSide);
+        if (state.roundHistory.length > 8) state.roundHistory.pop();
+        renderHistory();
+
+        state.roundNum++;
+        document.getElementById("round-num").textContent = state.roundNum;
+
+        // Loop after 5 seconds
+        setTimeout(() => {
+          document
+            .getElementById("card-display-area")
+            .classList.remove("hidden");
+          document.getElementById("deal-display").classList.add("hidden");
+          banner.classList.add("hidden");
+          phaseShuffleCards();
+        }, 5000);
+      }
+
+      function renderHistory() {
+        const row = document.getElementById("history-row");
+        row.innerHTML = state.roundHistory
+          .map(
+            (r) =>
+              `<div class="hist-badge ${r}">${r === "andar" ? "A" : "B"}</div>`,
+          )
+          .join("");
+      }
+
+      function enableBetBoxes(enabled) {
+        const boxes = ["andar", "bahar", "a19", "b210", "a1119", "b1220"];
+        boxes.forEach((k) => {
+          const b = document.getElementById("box-" + k);
+          if (!b) return;
+          if (enabled) {
+            b.classList.remove("disabled");
+            b.classList.add("pulse-ring");
+          } else {
+            b.classList.add("disabled");
+            b.classList.remove("pulse-ring");
+          }
+        });
+      }
+
+      function setPhaseText(text) {
+        document.getElementById("phase-text").textContent = text;
+      }
+
+      function resetAllData() {
+        if (
+          !confirm(
+            "Reset all stats, balance and history? This cannot be undone.",
+          )
+        )
+          return;
+
+        // Clear ALL localStorage
+        localStorage.clear();
+
+        // Stop any running timer
+        clearInterval(state.timerInterval);
+        state.timerInterval = null;
+
+        // Reset full state
+        state.balance = 2000000;
+        state.selectedChip = null;
+        state.userBets = {
+          andar: 0,
+          bahar: 0,
+          a19: 0,
+          b210: 0,
+          a1119: 0,
+          b1220: 0,
+        };
+        state.randomPools = {
+          andar: 0,
+          bahar: 0,
+          a19: 0,
+          b210: 0,
+          a1119: 0,
+          b1220: 0,
+        };
+        state.centerCard = null;
+        state.andarCards = [];
+        state.baharCards = [];
+        state.timer = 0;
+        state.roundHistory = [];
+        state.roundNum = 1;
+        state.stats = {
+          giveaway: 0,
+          profit: 0,
+          fee: 0,
+          totalBets: 0,
+          usersGet: 0,
+          userTotalBet: 0,
+          userTotalWin: 0,
+          userTotalLoss: 0,
+        };
+
+        // Reset all UI values silently
+        updateBalanceUI();
+        updateStatsUI();
+        renderPools();
+        renderHistory();
+        document.getElementById("round-num").textContent = 1;
+        document.getElementById("result-banner").classList.add("hidden");
+        document.getElementById("chip-info").textContent =
+          "Select a chip to place bets";
+        document.getElementById("chips-section").classList.add("hidden");
+        document.getElementById("deal-display").classList.add("hidden");
+        document.getElementById("card-display-area").classList.remove("hidden");
+        document.getElementById("card-display-area").innerHTML = "";
+        document.getElementById("history-row").innerHTML = "";
+        document
+          .querySelectorAll(".bet-box")
+          .forEach((b) =>
+            b.classList.remove("won", "lost", "selected", "pulse-ring"),
+          );
+        document
+          .querySelectorAll(".chip")
+          .forEach((c) => c.classList.remove("active-chip"));
+        enableBetBoxes(false);
+
+        // Show loading screen
+        const loadingScreen = document.getElementById("loading-screen");
+        const gameScreen = document.getElementById("game-screen");
+        loadingScreen.style.display = "flex";
+        loadingScreen.classList.add("active");
+        gameScreen.style.display = "none";
+        gameScreen.classList.remove("active");
+
+        // Reset loading bar animation by replacing it
+        const barWrap = loadingScreen.querySelector(".loading-bar-wrap");
+        barWrap.innerHTML = '<div class="loading-bar-fill"></div>';
+
+        // After loading delay, go back to game
+        setTimeout(() => {
+          loadingScreen.style.display = "none";
+          loadingScreen.classList.remove("active");
+          gameScreen.style.display = "block";
+          gameScreen.classList.add("active");
+          setTimeout(() => phaseShuffleCards(), 300);
+        }, 3000);
+      }
+
+      function toggleSound() {
+        state.soundOn = !state.soundOn;
+        document.querySelector(".sound-btn").textContent = state.soundOn
+          ? "🔊"
+          : "🔇";
+      }
+
+      // ============================================================
+      // INIT
+      // ============================================================
+      window.addEventListener("load", () => {
+        updateStatsUI();
+        updateBalanceUI();
+
+        // Loading screen → game screen after ~3 seconds
+        setTimeout(() => {
+          document.getElementById("loading-screen").classList.remove("active");
+          document.getElementById("loading-screen").style.display = "none";
+          document.getElementById("game-screen").classList.add("active");
+          document.getElementById("game-screen").style.display = "block";
+
+          // Start game loop
+          setTimeout(() => phaseShuffleCards(), 500);
+        }, 3000);
+      });
+    </script>
+  </body>
+</html>
